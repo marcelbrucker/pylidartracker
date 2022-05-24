@@ -200,6 +200,8 @@ class Controller():
         # using dialog window as how many frames would you like to load?
         settings, accepted = self._view.getInputDialog(
             max_frames=self._pcap_frame_count)
+        settings["from_frame"] = 0
+        settings["to_frame"] = 1
         if not accepted:
             print("[DEBUG] gon retur with status?")
             return

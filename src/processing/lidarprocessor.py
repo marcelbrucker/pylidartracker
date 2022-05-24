@@ -4,6 +4,7 @@ import numpy as np
 import time
 import os
 from .pcapframeparser import PcapFrameParser
+from .pcdframeparser import PcdFrameParser
 from .framestream import FrameStream
 from .planetranformer import PlaneTransformer
 from .cloudclipper import CloudClipper
@@ -159,7 +160,11 @@ class LidarProcessor():
         if self.filename is None:
             return
 
-        parser = PcapFrameParser(self.filename)
+        _, file_extension = os.path.splitext(self.filename)
+        if file_extension == '.pcd':
+            parser = PcdFrameParser(self.filename)
+        else:
+            parser = PcapFrameParser(self.filename)
         self.frameGenerator = parser.generator()
 
     def loadNFrames(self, N):
@@ -183,7 +188,11 @@ class LidarProcessor():
         return out
 
     def peek_size(self):
-        parser = PcapFrameParser(self.filename)
+        _, file_extension = os.path.splitext(self.filename)
+        if file_extension == '.pcd':
+            parser = PcdFrameParser(self.filename)
+        else:
+            parser = PcapFrameParser(self.filename)
         return parser.peek_size()
 
     # test stuff
@@ -468,3 +477,94 @@ class LidarProcessor():
             yield (i, ts, clusters, p)
 
 
+# def cart2sph(x: np.ndarray, y: np.ndarray,
+#              z: np.ndarray):
+#     """ Convert cartesian to spherical coordinates """
+
+#     # Convert -0.0 in 0.0 because np.arctan2() distinguishes 0.0 and -0.0
+#     x = x + 0.0
+#     y = y + 0.0
+#     z = z + 0.0
+
+#     hypotxy = np.hypot(x, y)
+#     r = np.hypot(hypotxy, z)
+#     elevation = np.arctan2(z, hypotxy)
+#     azimuth = np.arctan2(y, x)
+#     return azimuth, elevation, r
+
+
+# if __name__ == '__main__':
+#     import os
+#     from pypcd import pypcd
+#     from dataentities import Frame
+#     import open3d as o3d
+
+#     settings = {
+#         "path": "",
+#         "extractor":{
+#             "method":"range_image",
+#             "params":{
+#                 "percentile": 0.7,
+#                 "non_zero": 0.8,
+#                 "n_frames": 90
+#             }
+#         },
+#         "subtractor":{
+#             "method": "kd_tree", # "kd_tree", "octree"
+#             "params": {
+#                 "search_radius": 0.05 # "search_radius": 0.2, "resolution": 0.01
+#                 }
+#             }
+#     }
+
+#     dataset_path = '/home/marcel/Repositorys/a9_dataset_r01_s04/_points'
+
+#     frame_list = os.listdir(dataset_path)
+#     frame_list.sort()
+#     originalFrames = []
+
+#     for frame_num, frame in enumerate(frame_list):
+#         print(f'Processing frame {frame_num} ...')
+#         input_file = os.path.join(dataset_path, frame)
+#         pc = pypcd.PointCloud.from_path(input_file)
+#         if 'ring' not in pc.fields:
+#             print(f'\nDoes not contain ring information: {input_file}')
+#             continue
+#         azimuth, elevation, range_from_sensor = cart2sph(pc.pc_data['x'], pc.pc_data['y'], pc.pc_data['z'])
+#         frame = np.hstack((pc.pc_data['ring'][:, None],
+#                            elevation[:, None],
+#                            azimuth[:, None],
+#                            range_from_sensor[:, None],
+#                            pc.pc_data['intensity'][:, None]))
+#         originalFrames.append(frame)
+#     originalFrames = np.array(originalFrames)
+#     np.save("/home/marcel/Repositorys/pylidartracker/src/processing/a9_dataset_r01_s04.npy", originalFrames)
+
+#     originalFrames = []
+#     originalFrames_numpy = np.load("/home/marcel/Repositorys/pylidartracker/src/processing/a9_dataset_r01_s04.npy")
+#     for i in range(originalFrames_numpy.shape[0]):
+#         frame = Frame()
+#         frame.id = originalFrames_numpy[i, :, 0]
+#         frame.elevation = originalFrames_numpy[i, :, 1]
+#         frame.azimuth = originalFrames_numpy[i, :, 2]
+#         frame.distance = originalFrames_numpy[i, :, 3]
+#         frame.intensity = originalFrames_numpy[i, :, 4]
+#         originalFrames.append(frame)
+#     model = LidarProcessor()
+#     model._originalFrames = originalFrames
+
+#     model.extractBackground(method=settings["extractor"]["method"], **settings["extractor"]["params"])
+#     model.createBgSubtractor(method=settings["subtractor"]["method"], **settings["subtractor"]["params"])
+
+#     model.saveBackground("/home/marcel/Repositorys/pylidartracker/a9_background.txt")
+
+#     model.updatePreprocessed()
+
+#     # Visualization
+#     pc = o3d.geometry.PointCloud()
+#     for i in range(len(model._originalFrames)):
+#         print(f'Saving frame {i} ...')
+#         points = model._preprocessedArrays[i]
+#         pc.points = o3d.utility.Vector3dVector(points)
+#         pc.paint_uniform_color([1, 0, 0])
+#         o3d.io.write_point_cloud("/home/marcel/Repositorys/pylidartracker/a9_preprocessed/frame_" + str(i) + ".pcd", pc, write_ascii=True)
