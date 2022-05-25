@@ -134,7 +134,8 @@ class Controller():
 
     def load_config_fn(self, progress_callback):
         for p in self._model.updateProcessingGen():
-            progress_callback.emit(p)
+            if progress_callback is not None:
+                progress_callback.emit(p)
 
     def load_config_progress(self, n):
         self._view.statusProgressBar.setValue(n)
@@ -251,7 +252,8 @@ class Controller():
             else:
                 self._model.loadFrame()
 
-            progress_callback.emit((n+1)*100/(to_frame))
+            if progress_callback is not None:
+                progress_callback.emit((n+1)*100/(to_frame))
 
     # output
 
@@ -259,7 +261,8 @@ class Controller():
         self._model.restartBuffering()
         for (n, ts, clusters, p) in self._model.processingGen(start_frame, end_frame):
             self.outputWritter.add(n, ts, clusters)
-            progress_callback.emit(p)
+            if progress_callback is not None:
+                progress_callback.emit(p)
 
     def generate_output(self):
         # stop player
@@ -310,7 +313,8 @@ class Controller():
     #
     def _apply_preprocessing_fn(self, progress_callback):
         for p in self._model.updatePreprocessedGen():
-            progress_callback.emit(p)
+            if progress_callback is not None:
+                progress_callback.emit(p)
 
     def apply_preprocessing(self):
         # disable controls
@@ -456,7 +460,8 @@ class Controller():
 
     def _apply_clustering_fn(self, progress_callback):
         for p in self._model.extractClustersGen():
-            progress_callback.emit(p)
+            if progress_callback is not None:
+                progress_callback.emit(p)
 
     def apply_clustering(self):
         # disable controls
@@ -498,7 +503,8 @@ class Controller():
 
     def _apply_tracking_fn(self, progress_callback):
         for p in self._model.trackClustersGen():
-            progress_callback.emit(p)
+            if progress_callback is not None:
+                progress_callback.emit(p)
 
     def apply_tracking(self):
         # disable controls

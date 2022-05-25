@@ -66,7 +66,9 @@ class PcdFrameParser:
             normals = np.asarray(buf.normals)
             azimuth, elevation, range_from_sensor = cart2sph(points[:, 0], points[:, 1], points[:, 2])
             self.frame.id = normals[:, 1]
-            self.frame.elevation = elevation
+            self.frame.elevation = np.rad2deg(elevation)
+            azimuth = np.rad2deg(-1.0 * azimuth) # point cloud is mirror-inverted
+            azimuth[azimuth < 0] = azimuth[azimuth < 0] + 360
             self.frame.azimuth = azimuth
             self.frame.distance = range_from_sensor
             self.frame.intensity = normals[:, 0]
