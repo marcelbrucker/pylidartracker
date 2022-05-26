@@ -24,31 +24,32 @@ def cart2sph(x: np.ndarray, y: np.ndarray,
     return azimuth, elevation, r
 
 
-def pcd_helper(pcd_file):
-    ts = round(float(re.findall("\d+\.\d+", os.path.basename(pcd_file))[0]), 6)
+def pcd_helper(pcd_files):
+    pcdStream = []
+    for pcd_file in pcd_files:
+        ts = round(float(re.findall("\d+\.\d+", os.path.basename(pcd_file))[0]), 6)
 
-    # Open3D does not read information like intensity in PCD data
-    pc_intermediate = pypcd.PointCloud.from_path(pcd_file)
-    pc_raw = o3d.geometry.PointCloud()
-    points = np.hstack((pc_intermediate.pc_data['x'][:, None],
-                        pc_intermediate.pc_data['y'][:, None],
-                        pc_intermediate.pc_data['z'][:, None]))
-    additional_info = np.hstack((pc_intermediate.pc_data['intensity'][:, None],
-                                 pc_intermediate.pc_data['ring'][:, None],
-                                 pc_intermediate.pc_data['range'][:, None]))
-    pc_raw.points = o3d.utility.Vector3dVector(points)
-    pc_raw.normals = o3d.utility.Vector3dVector(additional_info)
-
-    pcdStream = [(ts, pc_raw)]
+        # Open3D does not read information like intensity in PCD data
+        pc_intermediate = pypcd.PointCloud.from_path(pcd_file)
+        pc_raw = o3d.geometry.PointCloud()
+        points = np.hstack((pc_intermediate.pc_data['x'][:, None],
+                            pc_intermediate.pc_data['y'][:, None],
+                            pc_intermediate.pc_data['z'][:, None]))
+        additional_info = np.hstack((pc_intermediate.pc_data['intensity'][:, None],
+                                    pc_intermediate.pc_data['ring'][:, None],
+                                    pc_intermediate.pc_data['range'][:, None]))
+        pc_raw.points = o3d.utility.Vector3dVector(points)
+        pc_raw.normals = o3d.utility.Vector3dVector(additional_info)
+        pcdStream.append((ts, pc_raw))
+        
     return pcdStream
 
 
 class PcdFrameParser:
-    def __init__(self, pcap_file):
+    def __init__(self, pcd_files):
         # check if PCAP file is really .pcap
-        self.pcap_file = pcap_file
-        # self.packetStream = dpkt.pcap.Reader(open(self.pcap_file, 'rb'))
-        self.packetStream = pcd_helper(self.pcap_file)
+        self.pcd_files = pcd_files
+        self.packetStream = pcd_helper(self.pcd_files)
         self.frameCount = 0
         self.lastAzi = -1
         self.frame = Frame()

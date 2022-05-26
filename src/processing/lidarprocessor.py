@@ -160,11 +160,10 @@ class LidarProcessor():
         if self.filename is None:
             return
 
-        _, file_extension = os.path.splitext(self.filename)
-        if file_extension == '.pcd':
+        if isinstance(self.filename, list) and os.path.splitext(self.filename[0])[1] == '.pcd':
             parser = PcdFrameParser(self.filename)
         else:
-            parser = PcapFrameParser(self.filename)
+            parser = PcapFrameParser(self.filename[0])
         self.frameGenerator = parser.generator()
 
     def loadNFrames(self, N):
@@ -188,11 +187,10 @@ class LidarProcessor():
         return out
 
     def peek_size(self):
-        _, file_extension = os.path.splitext(self.filename)
-        if file_extension == '.pcd':
+        if isinstance(self.filename, list) and os.path.splitext(self.filename[0])[1] == '.pcd':
             parser = PcdFrameParser(self.filename)
         else:
-            parser = PcapFrameParser(self.filename)
+            parser = PcapFrameParser(self.filename[0])
         return parser.peek_size()
 
     # test stuff

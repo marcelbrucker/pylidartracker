@@ -374,7 +374,7 @@ class LidarView(QtWidgets.QMainWindow):
     # DIALOGS
     #
     def getPCAPDialog(self):
-        fname = QtWidgets.QFileDialog.getOpenFileName(
+        fname = QtWidgets.QFileDialog.getOpenFileNames(
             self, 'Open File','',"PCAP/PCD Files (*.pcap *.pcd)")
         return fname[0]
 
