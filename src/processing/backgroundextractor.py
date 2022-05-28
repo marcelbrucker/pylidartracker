@@ -2,8 +2,8 @@ import numpy as np
 from copy import deepcopy
 
 class BackgroundExtractor:
-    def __init__(self, percentile=0.80, non_zero=0.70, n_frames=100, cartesian=False):
-        self.numScanLines = 32
+    def __init__(self, numScanLines=32, percentile=0.80, non_zero=0.70, n_frames=100, cartesian=False):
+        self.numScanLines = numScanLines
         self.percentile = percentile
         self.non_zero = non_zero
         self.n_frames = n_frames # TODO: NOT USED!!!

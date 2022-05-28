@@ -77,6 +77,7 @@ class LidarProcessor():
                 # if no path or invalid path, try to extract cloud
                 self.extractBackground(
                     method=config["background"]["extractor"]["method"],
+                    numScanLines=config["background"]["numScanLines"] if "numScanLines" in config["background"] else 32,
                     **config["background"]["extractor"]["params"])
 
             # finally create bg subtractor
@@ -327,8 +328,8 @@ class LidarProcessor():
         pts = self.arrayFromFrame(self.originalBgFrame)
         self.preprocessedBgArray = self.preprocessArray(pts)
 
-    def extractBackground(self, method, **kwargs):
-        self.bg_extractor = BackgroundExtractor(**kwargs)
+    def extractBackground(self, method, numScanLines, **kwargs):
+        self.bg_extractor = BackgroundExtractor(numScanLines, **kwargs)
         self.bg_extractor.extract(self._originalFrames)
         self.originalBgFrame = self.bg_extractor.get_background()
         #

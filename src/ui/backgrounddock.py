@@ -156,7 +156,7 @@ class BackgroundDock(QtWidgets.QDockWidget):
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         mainLayoutV.addItem(bottomSpacerV)
 
-    def set_from_config(self, path=None, extractor=None, subtractor=None):
+    def set_from_config(self, path=None, numScanLines=32, extractor=None, subtractor=None):
         validPath = path is not None and os.path.isfile(path)
         if validPath:
             self.loadBackground.setChecked(True)
