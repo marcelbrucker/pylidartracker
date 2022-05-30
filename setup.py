@@ -23,6 +23,7 @@ setup(
             "PyQt5",
             "pyopengl",
             "pyqtgraph==0.11.0",
+            "open3d"
         ], 
         entry_points ={ 
             'console_scripts': [ 
