@@ -46,7 +46,7 @@
             "params": {
                 "percentile": 0.7,
                 "non_zero": 0.8,
-                "n_frames": 90,
+                "n_frames": 90
             }
         },
         "subtractor": {
