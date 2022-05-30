@@ -1,0 +1,73 @@
+{
+    "ground": {
+        "method": "ransac",
+        "params": {
+            "normal": [
+                -0.018681133,
+                0.026500294,
+                0.999474237
+            ],
+            "intercept": 8.292880139
+        }
+    },
+    "clipper": {
+        "method": "polygon",
+        "params": {
+            "polygon": [
+                [
+                    -100.0,
+                    -100.0
+                ],
+                [
+                    -100.0,
+                    100.0
+                ],
+                [
+                    100.0,
+                    100.0
+                ],
+                [
+                    100.0,
+                    -100.0
+                ]
+            ],
+            "z_range": [
+                -10.0,
+                5.0
+            ],
+            "inverse": false
+        }
+    },
+    "background": {
+        "path": "/home/marcel/Repositorys/pylidartracker/data/a9_background.csv",
+        "numScanLines": 64,
+        "extractor": {
+            "method": "range_image",
+            "params": {
+                "percentile": 0.7,
+                "non_zero": 0.8,
+                "n_frames": 90,
+            }
+        },
+        "subtractor": {
+            "method": "element_comparison",
+            "params": {
+                "search_radius": 0.2
+            }
+        }
+    },
+    "clustering": {
+        "method": "dbscan",
+        "params": {
+            "search_radius": 0.7999999999999999,
+            "is_xy": true,
+            "min_samples": 30
+        }
+    },
+    "tracking": {
+        "method": "nearest_neigbour",
+        "params": {
+            "max_missing": 2
+        }
+    }
+}

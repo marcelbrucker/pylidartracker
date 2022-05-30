@@ -45,7 +45,7 @@ class LidarGraphicsView(gl.GLViewWidget):
         # cluster box
         self.cluster_box_lines = []
         self.cluster_box_text = []
-        self.box_color = (1.0, 1.0, 0.0, 1.0)
+        self.box_color = (1.0, 0.0, 0.0, 1.0)
         self.box_width = 2
         self.cluster_boxes = []
         self.cluster_labels = []
@@ -172,10 +172,10 @@ class LidarGraphicsView(gl.GLViewWidget):
     def setBackgroundPoints(self, pts):
         if pts is None:
             self.bgPoints = np.zeros((1,3))
-            self.bgColor = (0.0, 0.0, 1.0, 0.0)
+            self.bgColor = (1.0, 1.0, 0.0, 0.0)
         else:
             self.bgPoints = pts
-            self.bgColor = (0.0, 0.0, 1.0, 1.0)
+            self.bgColor = (1.0, 1.0, 0.0, 1.0)
 
     def setRawPoints(self, pts):
         if pts is None:
@@ -184,9 +184,9 @@ class LidarGraphicsView(gl.GLViewWidget):
         else:
             self.rawPoints = pts
             self.rawColor = np.zeros((pts.shape[0],3), dtype=np.float32)
-            self.rawColor[:,0] = 0
+            self.rawColor[:,0] = 1
             self.rawColor[:,1] = 1
-            self.rawColor[:,2] = 0
+            self.rawColor[:,2] = 1
 
     def setCropBox(self, polygon, zrange):
         if polygon is None or len(polygon) < 3:

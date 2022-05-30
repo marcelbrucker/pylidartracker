@@ -1,0 +1,58 @@
+{
+    "transformer": {
+        "method": "3_points_plane",
+        "params": {
+            "normal": [
+                -0.011632937179582394,
+                0.007286146269966017,
+                0.9999057889846965
+            ],
+            "intercept": 1.4211725407216333
+        }
+    },
+    "clipper": {
+        "method": "polygon",
+        "params": {
+            "polygon": [
+                [
+                    -6.0,
+                    -40.0
+                ],
+                [
+                    2.0,
+                    -40.0
+                ],
+                [
+                    2.0,
+                    -9.0
+                ],
+                [
+                    -3.0,
+                    -9.0
+                ]
+            ],
+            "z_range": [
+                0.0,
+                0.0
+            ],
+            "inverse": true
+        }
+    },
+    "background": {
+        "path": "C:/Users/msa/Documents/pylidartracker/examples/outside_office_bg.csv",
+        "extractor": {
+            "method": "range_image",
+            "params": {
+                "percentile": 0.7,
+                "non_zero": 0.8,
+                "n_frames": 99
+            }
+        },
+        "subtractor": {
+            "method": "kd_tree",
+            "params": {
+                "search_radius": 0.2
+            }
+        }
+    }
+}

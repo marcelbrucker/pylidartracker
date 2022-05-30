@@ -13,13 +13,18 @@ if __name__ == "__main__":
     ctrl = Controller(view=view, model=model)
     file = ["/home/marcel/Downloads/pylidartracker_test_data/street.pcap"]
     file = ["/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s05_sensor_data_s110_lidar_ouster_north_1646667395.048232462.pcd.pcd",
-            "/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s05_sensor_data_s110_lidar_ouster_north_1646667395.142218273.pcd.pcd"]
+            "/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s05_sensor_data_s110_lidar_ouster_north_1646667395.142218273.pcd.pcd",
+            "/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s05_sensor_data_s110_lidar_ouster_north_1646667395.242127188.pcd.pcd"]
     config_file = "/home/marcel/Downloads/pylidartracker_test_data/street_config.json"
     config_file = "/home/marcel/Downloads/pylidartracker_test_data/pcd_config.json"
     ctrl.analyze_pcap_fn(file, None)
-    ctrl.load_frames_fn(0, 2, None)
+    ctrl.load_frames_fn(0, 3, None)
     ctrl._model.init_from_config(config_file)
     ctrl._apply_preprocessing_fn(None)
+    ctrl._apply_clustering_fn(None)
+    ctrl._apply_tracking_fn(None)
+    ctrl._view.clusteringDock.previewButton.toggle()
+    ctrl.updateClusters()
     print('Hello World!')
 
     # packetStream = dpkt.pcap.Writer(open(pcap_file, 'wb'))

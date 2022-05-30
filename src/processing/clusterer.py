@@ -121,24 +121,45 @@ class Cluster():
                 b_max = aa_max
 
         if is_3d:
+            # TODO: Reactivate transformer and change this back
+            # zmax = np.max(self.points[:,2])
+            # polygon = np.array([
+            #     [b_min[0], b_min[1], 0],
+            #     [b_max[0], b_min[1], 0],
+            #     [b_max[0], b_max[1], 0],
+            #     [b_min[0], b_max[1], 0],
+            #     [b_min[0], b_min[1], 0],
+            #     [b_min[0], b_min[1], zmax],
+            #     [b_max[0], b_min[1], zmax],
+            #     [b_max[0], b_max[1], zmax],
+            #     [b_min[0], b_max[1], zmax],
+            #     [b_min[0], b_min[1], zmax],
+            #     [b_max[0], b_min[1], zmax],
+            #     [b_max[0], b_min[1], 0],
+            #     [b_max[0], b_max[1], 0],
+            #     [b_max[0], b_max[1], zmax],
+            #     [b_min[0], b_max[1], zmax],
+            #     [b_min[0], b_max[1], 0]
+            # ])
             zmax = np.max(self.points[:,2])
+            zmin = np.min(self.points[:,2])
             polygon = np.array([
-                [b_min[0], b_min[1], 0],
-                [b_max[0], b_min[1], 0],
-                [b_max[0], b_max[1], 0],
-                [b_min[0], b_max[1], 0],
-                [b_min[0], b_min[1], 0],
                 [b_min[0], b_min[1], zmax],
                 [b_max[0], b_min[1], zmax],
                 [b_max[0], b_max[1], zmax],
                 [b_min[0], b_max[1], zmax],
                 [b_min[0], b_min[1], zmax],
+                [b_min[0], b_min[1], zmin],
+                [b_max[0], b_min[1], zmin],
+                [b_max[0], b_max[1], zmin],
+                [b_min[0], b_max[1], zmin],
+                [b_min[0], b_min[1], zmin],
+                [b_max[0], b_min[1], zmin],
                 [b_max[0], b_min[1], zmax],
-                [b_max[0], b_min[1], 0],
-                [b_max[0], b_max[1], 0],
                 [b_max[0], b_max[1], zmax],
-                [b_min[0], b_max[1], zmax],
-                [b_min[0], b_max[1], 0]
+                [b_max[0], b_max[1], zmin],
+                [b_min[0], b_max[1], zmin],
+                [b_min[0], b_max[1], zmax]
             ])
         else:
             polygon = np.array([

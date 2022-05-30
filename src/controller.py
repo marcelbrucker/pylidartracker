@@ -21,7 +21,7 @@ class Controller():
 
         self.threadpool = QtCore.QThreadPool()
         self.items_status = {
-            "transform": False,
+            "planeProcess": False,
             "clipping": False,
             "background_extraction": False,
             "background_subtraction": False,
@@ -46,15 +46,15 @@ class Controller():
         # load 
         self._view.actionLoadPCAP.triggered.connect(self.analyze_pcap)
         
-        # transform dock
-        self._view.actionTransform.triggered.connect(
-            self._view.showTransformDock)
-        self._view.transformDock.pickBtn.toggled.connect(
+        # plane process dock
+        self._view.actionPlaneProcess.triggered.connect(
+            self._view.showPlaneProcessDock)
+        self._view.planeProcessDock.pickBtn.toggled.connect(
             self.allowPointPicking)
         self._view.graphicsView.threePointsPicked.connect(
-            self.calculateTransform)
-        self._view.transformDock.applyButton.clicked.connect(
-            self.applyTransform)
+            self.calculatePlaneProcess)
+        self._view.planeProcessDock.applyButton.clicked.connect(
+            self.applyPlaneProcess)
 
         # clipping dock
         self._view.actionClipping.triggered.connect(
@@ -342,49 +342,49 @@ class Controller():
     # PLANE FITTING AND TRANSFORM ACTON
     #
     def allowPointPicking(self):
-        if self._view.transformDock.pickBtn.isChecked():
+        if self._view.planeProcessDock.pickBtn.isChecked():
             # update dock
-            self._view.transformDock.pickBtn.setText("Stop point picking")
+            self._view.planeProcessDock.pickBtn.setText("Stop point picking")
             self._view.graphicsView.setSelectedVisible(True)
-            self._view.transformDock.enableResults(False)
-            self._view.transformDock.updateResult(None)
+            self._view.planeProcessDock.enableResults(False)
+            self._view.planeProcessDock.updateResult(None)
             
             # update graphics view settings
             self._view.graphicsView.setSelectionAllowed(True)
             self._view.graphicsView.resetSelected()
 
             # update model
-            self._model.destroyTransformer()
+            self._model.destroyPlaneProcessor()
 
         else:
-            self._view.transformDock.pickBtn.setText("Start point picking")
+            self._view.planeProcessDock.pickBtn.setText("Start point picking")
             self._view.graphicsView.setSelectionAllowed(False)
             
             if self._view.graphicsView.nSelected != 3:
                 self._view.graphicsView.resetSelected()
-                self._view.transformDock.updateResult(None)
+                self._view.planeProcessDock.updateResult(None)
                 # update model
-                self._model.destroyTransformer()
+                self._model.destroyPlaneProcessor()
             else:
-                self._view.transformDock.enableResults(True)
+                self._view.planeProcessDock.enableResults(True)
 
-    def calculateTransform(self):
+    def calculatePlaneProcess(self):
         pts = self._view.graphicsView.getSelectedPoints()
-        self._model.createTransformer(points=pts)
+        self._model.createPlaneProcessor(method="3_points_plane", points=pts)
 
         # draw reults on widget and plane on the screen
         normal, intercept = self._model.getPlaneCoeff()
-        self._view.transformDock.updateResult(normal, intercept)
+        self._view.planeProcessDock.updateResult(normal, intercept)
         
-        self._view.transformDock.pickBtn.setChecked(False)
+        self._view.planeProcessDock.pickBtn.setChecked(False)
 
-    def applyTransform(self):
-        if self._view.transformDock.enableTransform.isChecked():
+    def applyPlaneProcess(self):
+        if self._view.planeProcessDock.enablePlaneProcess.isChecked():
             self._view.graphicsView.setSelectedVisible(False)
             self.apply_preprocessing()
         else:
-            self._view.transformDock.updateResult(None)
-            self._model.destroyTransformer()
+            self._view.planeProcessDock.updateResult(None)
+            self._model.destroyPlaneProcessor()
             self.apply_preprocessing()
     #
     # CLIPPING ACTION
@@ -395,7 +395,7 @@ class Controller():
         # define clipper at model
         self._model.createClipper(method="polygon", **settings["params"])
 
-        if settings["transform"]:
+        if settings["ground"]:
             self.apply_preprocessing()
         else:
             self._view.clippingDock.reset()
@@ -595,8 +595,11 @@ class Controller():
         if self._view.clusteringDock.previewButton.isChecked():
             clusters = self._model.getClusters(self._currentFrameIdx)
             for c in clusters:
-                boxes.append(c.getOOBB())
-                labels.append(c.id)
+                box = c.getOOBB()
+                # An object cannot be that big
+                if np.max(box[:, 2]) < -2 and np.max(box[:, 2]) - np.min(box[:, 2]) < 4:
+                    boxes.append(box)
+                    labels.append(c.id)
         self._view.graphicsView.setClusterAABB(boxes)
         self._view.graphicsView.setClusterLabels(labels)
 

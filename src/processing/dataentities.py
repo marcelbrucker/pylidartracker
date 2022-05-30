@@ -63,29 +63,19 @@ class Frame:
             self.aziRad = np.deg2rad(self.azimuth)
         if(self.eleRad is None):
             self.eleRad = np.deg2rad(self.elevation)
-        
-    def getXs(self):
-        self.radiansCheck()
-        if(self.x is None):
-            self.x = (self.distance * np.cos(self.eleRad) * np.sin(self.aziRad)).flatten()
-        return self.x
-    
-    def getYs(self):
-        self.radiansCheck()
-        if(self.y is None):
-            self.y = (self.distance * np.cos(self.eleRad) * np.cos(self.aziRad)).flatten()
-        return self.y
-    
-    def getZs(self):
-        self.radiansCheck()
-        if(self.z is None):
-            self.z = (self.distance * np.sin(self.eleRad)).flatten()
-        return self.z
 
     def getCartesian(self):
+        # TODO: What convention is that? Leads to mirror-inverted point cloud
         self.radiansCheck()
         x = (self.distance * np.cos(self.eleRad) * np.sin(self.aziRad)).flatten()
         y = (self.distance * np.cos(self.eleRad) * np.cos(self.aziRad)).flatten()
+        z = (self.distance * np.sin(self.eleRad)).flatten()
+        return x,y,z
+
+    def getCartesianAccordingToMatlab(self):
+        self.radiansCheck()
+        x = (self.distance * np.cos(self.eleRad) * np.cos(self.aziRad)).flatten()
+        y = (self.distance * np.cos(self.eleRad) * np.sin(self.aziRad)).flatten()
         z = (self.distance * np.sin(self.eleRad)).flatten()
         return x,y,z
 
@@ -118,7 +108,7 @@ class Frame:
     def load_csv(self, filename):
         with open(filename, "r") as read_file:
             i, elev, az, dist, ints = np.loadtxt(
-            read_file, delimiter=None, skiprows=1, unpack=True, max_rows=70000)
+            read_file, delimiter=None, skiprows=1, unpack=True)
 
         self.id = i
         self.elevation = elev

@@ -6,10 +6,10 @@ import os
 from .pcapframeparser import PcapFrameParser
 from .pcdframeparser import PcdFrameParser
 from .framestream import FrameStream
-from .planetranformer import PlaneTransformer
+from .planeprocessor import PlaneProcessor
 from .cloudclipper import CloudClipper
 from .backgroundextractor import BackgroundExtractor
-from .backgroundsubtractor import BackgroundSubtractor
+from .backgroundsubtractor import BackgroundSubtractor, ElementComparisonSubtractor
 from .dataentities import Frame
 from .clusterer import Clusterer
 from .tracker import Tracker
@@ -24,7 +24,7 @@ class LidarProcessor():
 
         self.frameGenerator = None
 
-        self.transformer = None
+        self.plane_processor = None
 
         self.clipper = None
         
@@ -33,6 +33,8 @@ class LidarProcessor():
         self.bg_filename = None
         self.originalBgFrame = None
         self.preprocessedBgArray = None
+        self.numScanLines = None
+        self.range_thrld_matrix = None
 
         self.clusterer = None
         self.frameClusters = []
@@ -49,11 +51,12 @@ class LidarProcessor():
         # are there and spelled correctly
 
         # call processors one by one
-        # transformer
-        if "transformer" in config.keys():
-            self.createTransformer(**config["transformer"]["params"])
+        # plane processor
+        if "ground" in config.keys():
+            self.createPlaneProcessor(method=config["ground"]["method"], 
+                **config["ground"]["params"])
         else:
-            self.destroyTransformer()
+            self.destroyPlaneProcessor()
 
         # clipper
         if "clipper" in config.keys():
@@ -69,7 +72,7 @@ class LidarProcessor():
                 # try to get background cloud by loading file
                 bg_path = config["background"]["path"]
                 if os.path.exists(bg_path):
-                    self.loadBackground(bg_path)
+                    self.loadBackground(bg_path, method=config["background"]["subtractor"]["method"])
                 else:
                     isLoaded = False
 
@@ -108,10 +111,10 @@ class LidarProcessor():
         with open(configpath, "w") as write_file:
 
             config = {}
-            # transformer pre-processor part
-            if self.transformer is not None:
-                settings = self.transformer.get_config()
-                config["transformer"] = settings
+            # plane processor pre-processor part
+            if self.plane_processor is not None:
+                settings = self.plane_processor.get_config()
+                config["ground"] = settings
 
             # clipper pre-processor part
             if self.clipper is not None:
@@ -124,6 +127,8 @@ class LidarProcessor():
                 config["background"]["path"] = self.bg_filename
             else:
                 config["background"]["path"] = ""
+
+            config["background"]["numScanLines"] = self.numScanLines
 
             if self.bg_extractor is not None:
                 settings = self.bg_extractor.get_config()
@@ -145,7 +150,7 @@ class LidarProcessor():
             print("Config saved to:\n{0}".format(configpath))
 
     def resetProcessors(self):
-        self.destroyTransformer()
+        self.destroyPlaneProcessor()
         self.destroyClipper()
         self.destroyBgExtractor()
         self.destroyBgSubtractor()
@@ -189,10 +194,10 @@ class LidarProcessor():
 
     def peek_size(self):
         if isinstance(self.filename, list) and os.path.splitext(self.filename[0])[1] == '.pcd':
-            parser = PcdFrameParser(self.filename)
+            return len(self.filename)
         else:
             parser = PcapFrameParser(self.filename[0])
-        return parser.peek_size()
+            return parser.peek_size()
 
     # test stuff
     def resetFrameData(self):
@@ -216,7 +221,11 @@ class LidarProcessor():
         return self._preprocessedArrays[frameID]
 
     def arrayFromFrame(self, frame):
-        x,y,z = frame.getCartesian()
+        # TODO: Use always getCartesianAccordingToMatlab if does not conflict with baseline
+        if isinstance(self.filename, list) and os.path.splitext(self.filename[0])[1] == '.pcd':
+            x,y,z = frame.getCartesianAccordingToMatlab()
+        else:
+            x,y,z = frame.getCartesian()
         pts = np.vstack((x,y,z)).astype(np.float32).T
         pts = self.removeZeros(pts)
         return pts
@@ -228,10 +237,22 @@ class LidarProcessor():
         # ensure the subtractor is initiated with the correct
         # background point cloud
         if self.originalBgFrame is not None:
-            pts = self.arrayFromFrame(self.originalBgFrame)
-            self.preprocessedBgArray = self.preprocessBg(pts)
             if self.bg_subtractor is not None:
-                self.bg_subtractor.set_background(self.preprocessedBgArray)
+                if isinstance(self.bg_subtractor, ElementComparisonSubtractor):
+                    #  TODO: until now work-around: frame at night as static
+                    # background because sph2cart transformation with 
+                    # range_thrld_matrix as distance leads to skewed point cloud
+                    pts = self.arrayFromFrame(self.originalBgFrame)
+                    self.preprocessedBgArray = pts
+                    self.bg_subtractor.set_background(self.preprocessedBgArray)
+                    self.bg_subtractor.set_range_thrld_matrix(self.range_thrld_matrix)
+                else:
+                    pts = self.arrayFromFrame(self.originalBgFrame)
+                    self.preprocessedBgArray = self.preprocessBg(pts)
+                    self.bg_subtractor.set_background(self.preprocessedBgArray)
+            else:
+                pts = self.arrayFromFrame(self.originalBgFrame)
+                self.preprocessedBgArray = self.preprocessBg(pts)
 
     def updatePreprocessedGen(self):
         self.updateBackground()
@@ -256,9 +277,23 @@ class LidarProcessor():
             self._preprocessedArrays.append(pts)
 
     def preprocessArray(self, arr):
-        # apply transformer
-        if self.transformer is not None:
-            arr = self.transformer.transform(arr)
+        if isinstance(self.filename, list) and os.path.splitext(self.filename[0])[1] == '.pcd':
+            import open3d as o3d
+            pc = o3d.geometry.PointCloud()
+            # extract front sensor area
+            arr = arr[arr[:, 0] > 0]
+
+            # remove sensor station artifacts
+            pc.points = o3d.utility.Vector3dVector(arr)
+            min_bound = np.array([-5, -17.5, -10])
+            max_bound = np.array([7, 19, 5])
+            sensor_station = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
+            pc = pc.select_by_index(sensor_station.get_point_indices_within_bounding_box(pc.points), invert=True)
+            arr = np.asarray(pc.points)
+
+        # apply plane processor
+        if self.plane_processor is not None:
+            arr = self.plane_processor.apply(arr)
             
         # apply clipper
         if self.clipper is not None:
@@ -268,12 +303,22 @@ class LidarProcessor():
         if self.bg_subtractor is not None:
             arr = self.bg_subtractor.subtract(arr)
 
+        # TODO: Make this available in config file
+        if isinstance(self.filename, list) and os.path.splitext(self.filename[0])[1] == '.pcd':
+            import open3d as o3d
+            pc = o3d.geometry.PointCloud()
+            pc.points = o3d.utility.Vector3dVector(arr)
+            _, indices = pc.remove_radius_outlier(nb_points=30, radius=2.0)
+            indices = np.array(indices)
+            pc_filtered = pc.select_by_index(indices)
+            arr = np.asarray(pc_filtered.points)
+
         return arr
 
     def preprocessBg(self, arr):
-        # apply transformer
-        if self.transformer is not None:
-            arr = self.transformer.transform(arr)
+        # apply plane processor
+        if self.plane_processor is not None:
+            arr = self.plane_processor.apply(arr)
             
         # apply clipper
         if self.clipper is not None:
@@ -282,25 +327,25 @@ class LidarProcessor():
         return arr
 
     def removeZeros(self, arr):
-        return arr[np.all(arr, axis=1)]
+        return arr[np.any(arr, axis=1)]
     #
     # PLANE ESTIMATION
     #
-    def destroyTransformer(self):
-        self.transformer = None
+    def destroyPlaneProcessor(self):
+        self.plane_processor = None
 
-    def createTransformer(self, points=None, **kwargs):
+    def createPlaneProcessor(self, method, points=None, **kwargs):
             if points is not None:
-                self.transformer = PlaneTransformer()
-                self.transformer.get_plane_from_3_points(points)
+                self.plane_processor = PlaneProcessor.factory("3_points_plane")
+                self.plane_processor.get_plane_from_3_points(points)
             elif "normal" in kwargs and "intercept" in kwargs:
-                self.transformer = PlaneTransformer(
-                    kwargs["normal"], kwargs["intercept"])
+                self.plane_processor = PlaneProcessor.factory(method,
+                    **kwargs)
             else:
                 ValueError("")
 
     def getPlaneCoeff(self):
-        return self.transformer.get_plane_coeff()
+        return self.plane_processor.get_plane_coeff()
 
     #
     # CLOUD CLIPPER
@@ -319,17 +364,25 @@ class LidarProcessor():
             self.originalBgFrame.save_csv(filename)
             self.bg_filename = filename
 
-    def loadBackground(self, filename):
+    def loadBackground(self, filename, method="kd_tree"):
         self.bg_extractor = None
         self.originalBgFrame = Frame()
         self.originalBgFrame.load_csv(filename)
         self.bg_filename = filename
-        
         pts = self.arrayFromFrame(self.originalBgFrame)
         self.preprocessedBgArray = self.preprocessArray(pts)
+        if method == "element_comparison":
+            range_thrld_matrix_path = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "data/range_thrld_matrix.npy")
+            try:
+                self.range_thrld_matrix = np.load(range_thrld_matrix_path)
+            except FileNotFoundError:
+                print(f'{range_thrld_matrix_path} does not exist.')
+            
 
     def extractBackground(self, method, numScanLines, **kwargs):
-        self.bg_extractor = BackgroundExtractor(numScanLines, **kwargs)
+        self.numScanLines = numScanLines
+        self.bg_extractor = BackgroundExtractor(self.numScanLines, **kwargs)
         self.bg_extractor.extract(self._originalFrames)
         self.originalBgFrame = self.bg_extractor.get_background()
         #
@@ -340,6 +393,7 @@ class LidarProcessor():
         self.bg_extractor = None
         self.originalBgFrame = None
         self.preprocessedBgArray = None
+        self.numScanLines = None
 
     def createBgSubtractor(self, method, **kwargs):
         if self.originalBgFrame is not None:
@@ -406,7 +460,7 @@ class LidarProcessor():
     #
     def get_status(self):
         status = {
-            "transform": self.transformer is not None,
+            "plane_process": self.plane_processor is not None,
             "clipping": self.clipper is not None,
             "background_extraction": self.bg_extractor is not None,
             "background_subtraction": self.bg_subtractor is not None,
@@ -457,7 +511,7 @@ class LidarProcessor():
 
             (ts, frame) = self.readNextFrame()
 
-            # apply transform, clipping, bg subtraction
+            # apply plane process, clipping, bg subtraction
             pts = self.arrayFromFrame(frame)
             pts = self.preprocessArray(pts)
 

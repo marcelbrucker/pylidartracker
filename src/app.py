@@ -5,7 +5,7 @@ import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pyqtgraph.opengl as gl
 
-from ui.transformdockui import TransformDock
+from ui.planeprocessdockui import PlaneProcessDock
 from ui.clippingdockui import ClippingDock
 from ui.lidargraphicsview import LidarGraphicsView
 from ui.backgrounddock import BackgroundDock
@@ -43,14 +43,14 @@ class LidarView(QtWidgets.QMainWindow):
 
         self._createGraphicsDisplay()
 
-        self._createTransformDock()
+        self._createPlaneProcessDock()
         self._createClippingDock()
         self._createBackgroundDock()
         self._createClusteringDock()
         self._createTrackingDock()
 
         self.docks = [
-            (self.transformDock, self.actionTransform),
+            (self.planeProcessDock, self.actionPlaneProcess),
             (self.clippingDock, self.actionClipping),
             (self.backgroundDock, self.actionBackground),
             (self.clusteringDock, self.actionCluster),
@@ -73,7 +73,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionPlayerRun.triggered.connect(self.switchPlayerState)
 
         # menu
-        self.transformMenu.triggered.connect(self.showTransformDock)
+        self.planeProcessMenu.triggered.connect(self.showPlaneProcessDock)
         self.clippingMenu.triggered.connect(self.showClippingDock)
         self.subtractionMenu.triggered.connect(self.showBackgroundDock)
         self.clusterMenu.triggered.connect(self.showClusteringDock)
@@ -106,11 +106,11 @@ class LidarView(QtWidgets.QMainWindow):
             #self.graphicsView.init_from_config(config)
 
             # call docks one by one
-            # transform dock
-            if "transformer" in config.keys():
-                self.transformDock.set_from_config(**config["transformer"]["params"])
+            # plane process dock
+            if "ground" in config.keys():
+                self.planeProcessDock.set_from_config(**config["ground"]["params"])
             else:
-                self.transformDock.reset()
+                self.planeProcessDock.reset()
             
             # clipping dock
             if "clipper" in config.keys():
@@ -142,7 +142,7 @@ class LidarView(QtWidgets.QMainWindow):
                 self.trackingDock.reset()
 
     def resetAllDocks(self):
-        self.transformDock.reset()
+        self.planeProcessDock.reset()
         self.clippingDock.reset()
         self.backgroundDock.reset()
         self.clusteringDock.reset()
@@ -170,15 +170,15 @@ class LidarView(QtWidgets.QMainWindow):
         
         # TRANSFORM
         self.toolBar.addSeparator()
-        self.actionTransform = QtWidgets.QAction(parent=self)
-        self.actionTransform.setToolTip(
+        self.actionPlaneProcess = QtWidgets.QAction(parent=self)
+        self.actionPlaneProcess.setToolTip(
             "Define new XY plane for the point clouds")
-        self.actionTransform.setCheckable(True)
+        self.actionPlaneProcess.setCheckable(True)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/images/transform.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.actionTransform.setIcon(icon)
-        self.toolBar.addAction(self.actionTransform)
+        self.actionPlaneProcess.setIcon(icon)
+        self.toolBar.addAction(self.actionPlaneProcess)
 
         # CLIP
         self.actionClipping = QtWidgets.QAction(parent=self)
@@ -316,8 +316,8 @@ class LidarView(QtWidgets.QMainWindow):
         fileMenu.addAction(self.saveConfigMenu)
 
         editMenu = self.menuBar.addMenu('Edit')
-        self.transformMenu = QtWidgets.QAction('Rotate data')
-        editMenu.addAction(self.transformMenu)
+        self.planeProcessMenu = QtWidgets.QAction('Rotate data')
+        editMenu.addAction(self.planeProcessMenu)
         self.clippingMenu = QtWidgets.QAction('Clip data')
         editMenu.addAction(self.clippingMenu)
         self.subtractionMenu = QtWidgets.QAction('Subtract background')
@@ -411,20 +411,20 @@ class LidarView(QtWidgets.QMainWindow):
     #
     # DOCKS
     #
-    def _createTransformDock(self):
-        self.transformDock = TransformDock(parent=self)
-        self.transformDock.setVisible(False)
-        self.transformDock.setEnabled(False)
-        self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.transformDock)
+    def _createPlaneProcessDock(self):
+        self.planeProcessDock = PlaneProcessDock(parent=self)
+        self.planeProcessDock.setVisible(False)
+        self.planeProcessDock.setEnabled(False)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.planeProcessDock)
 
-    def showTransformDock(self):
-        if self.transformDock.isVisible():
+    def showPlaneProcessDock(self):
+        if self.planeProcessDock.isVisible():
             self.hideAllDocks()
         else:
             self.hideAllDocks()
-            self.transformDock.setVisible(True)
-            self.transformDock.setEnabled(True)
-            self.actionTransform.setChecked(True)
+            self.planeProcessDock.setVisible(True)
+            self.planeProcessDock.setEnabled(True)
+            self.actionPlaneProcess.setChecked(True)
 
     def _createClippingDock(self):
         self.clippingDock = ClippingDock(parent=self)
@@ -527,10 +527,10 @@ class LidarView(QtWidgets.QMainWindow):
         self.showClusters.setEnabled(enabled)
 
     def enablePreprocessing(self, enabled=True):
-        self.actionTransform.setEnabled(enabled)
+        self.actionPlaneProcess.setEnabled(enabled)
         self.actionClipping.setEnabled(enabled)
         self.actionBackground.setEnabled(enabled)
-        self.transformMenu.setEnabled(enabled)
+        self.planeProcessMenu.setEnabled(enabled)
         self.clippingMenu.setEnabled(enabled)
         self.subtractionMenu.setEnabled(enabled)
 
