@@ -59,15 +59,23 @@
     "clustering": {
         "method": "dbscan",
         "params": {
-            "search_radius": 0.7999999999999999,
+            "search_radius": 1.3,
             "is_xy": true,
             "min_samples": 30
+        },
+        "tresholds": {
+            "max_height_thrld": -3,
+            "min_height_thrld": -4,
+            "box_height_thrld": 4.5,
+            "box_length_thrld": 0,
+            "box_width_thrld": 0
         }
     },
     "tracking": {
         "method": "nearest_neigbour",
         "params": {
             "max_missing": 2
+            
         }
     }
 }

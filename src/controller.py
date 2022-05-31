@@ -590,14 +590,54 @@ class Controller():
             self._view.graphicsView.draw()
 
     def updateClusters(self):
+        if self.config_filename is not None and os.path.exists(self.config_filename):
+            with open(self.config_filename, "r") as read_file:
+                config = json.load(read_file)
+                if "tresholds" in config["clustering"].keys():
+                    max_height_thrld = config["clustering"]["tresholds"][
+                        "max_height_thrld"] if "max_height_thrld" in config["clustering"][
+                            "tresholds"].keys() else 0
+                    min_height_thrld = config["clustering"]["tresholds"][
+                        "min_height_thrld"] if "min_height_thrld" in config["clustering"][
+                            "tresholds"].keys() else 0
+                    box_height_thrld = config["clustering"]["tresholds"][
+                        "box_height_thrld"] if "box_height_thrld" in config["clustering"][
+                            "tresholds"].keys() else 1e2
+                    box_length_thrld = config["clustering"]["tresholds"][
+                        "box_length_thrld"] if "box_length_thrld" in config["clustering"][
+                            "tresholds"].keys() else 0
+                    box_width_thrld = config["clustering"]["tresholds"][
+                        "box_width_thrld"] if "box_width_thrld" in config["clustering"][
+                            "tresholds"].keys() else 0
+                else:
+                    max_height_thrld = 0
+                    min_height_thrld = 0
+                    box_height_thrld = 1e2
+                    box_length_thrld = 0
+                    box_width_thrld = 0
+        else:
+            max_height_thrld = 0
+            min_height_thrld = 0
+            box_height_thrld = 1e2
+            box_length_thrld = 0
+            box_width_thrld = 0
+
         boxes = []
         labels = []
         if self._view.clusteringDock.previewButton.isChecked():
             clusters = self._model.getClusters(self._currentFrameIdx)
             for c in clusters:
                 box = c.getOOBB()
-                # An object cannot be that big
-                if np.max(box[:, 2]) < -2 and np.max(box[:, 2]) - np.min(box[:, 2]) < 4:
+                max_height = np.max(box[:, 2])
+                min_height = np.min(box[:, 2])
+                box_height = max_height - min_height
+                box_length = np.max(box[:, 0]) - np.min(box[:, 0])
+                box_width = np.max(box[:, 1]) - np.min(box[:, 1])
+                xy_area = box_width * box_length
+                # An object cannot be of that shape
+                # if max_height < -3 and min_height < -6.5 and box_height < 3.5:
+                # if box_length > 0.5 and box_width > 0.5 and box_height < 3.5:
+                if max_height < max_height_thrld and min_height < min_height_thrld and box_height < box_height_thrld and box_length > box_length_thrld and box_width > box_width_thrld:
                     boxes.append(box)
                     labels.append(c.id)
         self._view.graphicsView.setClusterAABB(boxes)
