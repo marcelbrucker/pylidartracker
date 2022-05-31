@@ -631,13 +631,14 @@ class Controller():
                 max_height = np.max(box[:, 2])
                 min_height = np.min(box[:, 2])
                 box_height = max_height - min_height
-                box_length = np.max(box[:, 0]) - np.min(box[:, 0])
-                box_width = np.max(box[:, 1]) - np.min(box[:, 1])
+                xy_vertices = box[:4, :2]
+                box_length = np.linalg.norm(xy_vertices[0] - xy_vertices[1])
+                box_width = np.linalg.norm(xy_vertices[1] - xy_vertices[2])
                 xy_area = box_width * box_length
                 # An object cannot be of that shape
                 # if max_height < -3 and min_height < -6.5 and box_height < 3.5:
                 # if box_length > 0.5 and box_width > 0.5 and box_height < 3.5:
-                if max_height < max_height_thrld and min_height < min_height_thrld and box_height < box_height_thrld and box_length > box_length_thrld and box_width > box_width_thrld:
+                if max_height < max_height_thrld and min_height < min_height_thrld and box_height < box_height_thrld and ((box_length > box_length_thrld and box_width > box_width_thrld) or (box_length > box_width_thrld and box_width > box_length_thrld)):
                     boxes.append(box)
                     labels.append(c.id)
         self._view.graphicsView.setClusterAABB(boxes)
