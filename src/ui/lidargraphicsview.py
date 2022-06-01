@@ -307,7 +307,7 @@ class LidarGraphicsView(gl.GLViewWidget):
                 box_color_hex = '56FFB6' 
                 box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
             else:
-                box_color = self.box_color
+                continue
             l = gl.GLLinePlotItem(pos=box, color=box_color,
                 width=self.box_width)
             self.addItem(l)
