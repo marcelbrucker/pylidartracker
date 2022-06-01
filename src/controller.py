@@ -589,6 +589,69 @@ class Controller():
             self.updateClusters()
             self._view.graphicsView.draw()
 
+    def box_center_to_corner(self, cx: float, cy: float, cz: float, l: float, w: float,
+                            h: float, rotation: float) -> np.ndarray:
+        """ Computes vertices of box given center and dimensions """
+
+        translation = [cx, cy, cz]
+        # Create a bounding box outline
+        bounding_box = np.array(
+            [[-l / 2, -l / 2, l / 2, l / 2, -l / 2, -l / 2, l / 2, l / 2],
+            [w / 2, -w / 2, -w / 2, w / 2, w / 2, -w / 2, -w / 2, w / 2],
+            [0 / 2, 0 / 2, 0 / 2, 0 / 2, h, h, h, h]])
+
+        # Standard 3x3 rotation matrix around the Z axis
+        rotation_matrix = np.array([[np.cos(rotation), -np.sin(rotation), 0.0],
+                                    [np.sin(rotation),
+                                    np.cos(rotation), 0.0], [0.0, 0.0, 1.0]])
+
+        # Repeat the [x, y, z] eight times
+        eight_points = np.tile(translation, (8, 1))
+        # Translate the rotated bounding box by the
+        # original center position to obtain the final box
+        corner_box = np.dot(rotation_matrix,
+                            bounding_box) + eight_points.transpose()
+        return corner_box.transpose()
+
+    def updateGroundTruth(self):
+        if not isinstance(self.pcap_filename, list) or ".pcap" in self.pcap_filename[0]:
+            return []
+
+        frame = self.pcap_filename[self._currentFrameIdx]
+        label = frame.replace("_points", "_labels")
+        label = label.replace(".pcd.pcd", ".pcd.json")
+        if label == frame or not os.path.exists(label):
+            return []
+            
+        ground_truth = []
+
+        json_file = open(label, )
+        json_data = json.load(json_file)
+        for label in json_data["labels"]:
+            l = float(label["dimensions"]["length"])
+            w = float(label["dimensions"]["width"])
+            h = float(label["dimensions"]["height"])
+            quat_x = float(label["rotation"]["_x"])
+            quat_y = float(label["rotation"]["_y"])
+            quat_z = float(label["rotation"]["_z"])
+            quat_w = float(label["rotation"]["_w"])
+            rotation = np.arcsin(2 * quat_x * quat_y + 2 * quat_z * quat_w)
+            position_3d = [
+                float(label["center"]["x"]),
+                float(label["center"]["y"]),
+                float(label["center"]["z"]) - h / 2  # To avoid floating bounding boxes
+            ]
+            category = label["category"].upper()
+            corner_box = self.box_center_to_corner(position_3d[0], position_3d[1],
+                                            position_3d[2], l, w, h, rotation)
+            box = np.array([corner_box[4], corner_box[5], corner_box[6], corner_box[7],
+                corner_box[4], corner_box[0], corner_box[1], corner_box[2],
+                corner_box[3], corner_box[0], corner_box[1], corner_box[5], 
+                corner_box[6], corner_box[2], corner_box[3], corner_box[7]])
+            ground_truth.append((box, category))
+
+        return ground_truth
+
     def updateClusters(self):
         if self.config_filename is not None and os.path.exists(self.config_filename):
             with open(self.config_filename, "r") as read_file:
@@ -624,6 +687,7 @@ class Controller():
 
         boxes = []
         labels = []
+        ground_truth = []
         if self._view.clusteringDock.previewButton.isChecked():
             clusters = self._model.getClusters(self._currentFrameIdx)
             for c in clusters:
@@ -641,8 +705,10 @@ class Controller():
                 if max_height < max_height_thrld and min_height < min_height_thrld and box_height < box_height_thrld and ((box_length > box_length_thrld and box_width > box_width_thrld) or (box_length > box_width_thrld and box_width > box_length_thrld)):
                     boxes.append(box)
                     labels.append(c.id)
+            ground_truth = self.updateGroundTruth()
         self._view.graphicsView.setClusterAABB(boxes)
         self._view.graphicsView.setClusterLabels(labels)
+        self._view.graphicsView.setGroundTruth(ground_truth)
 
     def updateBackgroundPoints(self):
         if self._view.backgroundDock.previewButton.isChecked():

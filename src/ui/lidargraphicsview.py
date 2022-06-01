@@ -45,10 +45,12 @@ class LidarGraphicsView(gl.GLViewWidget):
         # cluster box
         self.cluster_box_lines = []
         self.cluster_box_text = []
+        self.ground_truth_lines = []
         self.box_color = (1.0, 0.0, 0.0, 1.0)
         self.box_width = 2
         self.cluster_boxes = []
         self.cluster_labels = []
+        self.ground_truth = []
         self.box_mesh_faces = np.array([
                 [0, 1, 3],
                 [1, 2, 3],
@@ -215,6 +217,12 @@ class LidarGraphicsView(gl.GLViewWidget):
             for l in labels:
                 self.cluster_labels.append(l)
 
+    def setGroundTruth(self, ground_truth):
+        self.ground_truth = []
+        if ground_truth:
+            for g in ground_truth:
+                self.ground_truth.append(g)
+
     def draw(self):
         #draw raw points
         self.rawCloud.setData(pos=self.rawPoints,
@@ -228,7 +236,18 @@ class LidarGraphicsView(gl.GLViewWidget):
         self.drawCropBox()
 
         # draw clusters
+        # print('self.cluster_boxes')
+        # print(len(self.cluster_boxes))
+        # if len(self.cluster_boxes) > 0:
+        #     print(self.cluster_boxes[0])
         self.drawClusters()
+
+        # draw ground truth
+        # print('self.ground_truth')
+        # print(len(self.ground_truth))
+        # if len(self.ground_truth) > 0:
+        #     print(self.ground_truth[0])
+        self.drawGroundTruth()
 
     def drawCropBox(self):
         self.cb_top_poly_line.setData(pos=self.cb_top_poly,
@@ -320,6 +339,32 @@ class LidarGraphicsView(gl.GLViewWidget):
                 text="ID_{}".format(label))
             self.addItem(t)
             self.cluster_box_text.append(t)
+
+    def drawGroundTruth(self):
+        # remove ground truth
+        try:
+            [self.removeItem(b) for b in self.ground_truth_lines]
+        except Exception:
+            pass
+
+        color_map = {
+            "CAR": [0, 0.8, 0.964705882, 1.0],
+            "TRUCK": [0.337254902, 1, 0.71372549, 1.0],
+            "TRAILER": [0.352941176, 1, 0.494117647, 1.0],
+            "VAN": [0.921568627, 0.811764706, 0.211764706, 1.0],
+            "MOTORCYCLE": [0.725490196, 0.643137255, 0.329411765, 1.0],
+            "BUS": [0.850980392, 0.541176471, 0.525490196, 1.0],
+            "PEDESTRIAN": [0.91372549, 0.462745098, 0.976470588, 1.0],
+            "BICYCLE": [0.694117647, 0.549019608, 1, 1.0],
+            "EMERGENCY_VEHICLE": [0.4, 0.419607843, 0.980392157, 1.0],
+            "OTHER": [0.780392157, 0.780392157, 0.780392157, 1.0]
+        }
+
+        self.ground_truth_lines = []
+        for box, category in self.ground_truth:
+            g = gl.GLLinePlotItem(pos=box, color=color_map[category], width=self.box_width)
+            self.addItem(g)
+            self.ground_truth_lines.append(g)
 
 if __name__ == "__main__":
     from PyQt5 import QtWidgets, QtCore

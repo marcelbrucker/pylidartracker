@@ -17,6 +17,7 @@ if __name__ == "__main__":
             "/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s04_sensor_data_s110_lidar_ouster_north_1646667318.539890142.pcd.pcd"]
     config_file = "/home/marcel/Repositorys/pylidartracker/data/street_config.json"
     config_file = "/home/marcel/Repositorys/pylidartracker/data/pcd_config.json"
+    ctrl.pcap_filename = file
     ctrl.analyze_pcap_fn(file, None)
     ctrl.load_frames_fn(0, 3, None)
     ctrl.config_filename = config_file
