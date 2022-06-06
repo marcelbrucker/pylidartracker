@@ -121,6 +121,18 @@ class Controller():
 
         self._model.init_from_config(self.config_filename)
 
+        with open(self.config_filename, "r") as read_file:
+            config = json.load(read_file)
+            if "settings" in config["clustering"].keys():
+                self._view.graphicsView.classifyObjects = config["clustering"]["settings"][
+                    "classify_objects"] if "classify_objects" in config["clustering"][
+                        "settings"].keys() else False
+                self._view.graphicsView.visualizeGroundTruth = config["clustering"]["settings"][
+                    "visualize_ground_truth"] if "visualize_ground_truth" in config["clustering"][
+                        "settings"].keys() else False
+            else:
+                self._view.graphicsView.classifyObjects = False
+                self._view.graphicsView.visualizeGroundTruth = False
         # lock buttons, activate status bar
         self._view.enableAllControls(False)
         self._view.statusBar.showMessage("Applying project configuration...")
@@ -690,21 +702,27 @@ class Controller():
         ground_truth = []
         if self._view.clusteringDock.previewButton.isChecked():
             clusters = self._model.getClusters(self._currentFrameIdx)
+            if not isinstance(self.pcap_filename, list) or ".pcap" in self.pcap_filename[0]:
+                data = 'pcap'
+            else:
+                data = 'pcd'
             for c in clusters:
-                box = c.getOOBB()
-                max_height = np.max(box[:, 2])
-                min_height = np.min(box[:, 2])
-                box_height = max_height - min_height
-                xy_vertices = box[:4, :2]
-                box_length = np.linalg.norm(xy_vertices[0] - xy_vertices[1])
-                box_width = np.linalg.norm(xy_vertices[1] - xy_vertices[2])
-                xy_area = box_width * box_length
-                # An object cannot be of that shape
-                # if max_height < -3 and min_height < -6.5 and box_height < 3.5:
-                # if box_length > 0.5 and box_width > 0.5 and box_height < 3.5:
-                if max_height < max_height_thrld and min_height < min_height_thrld and box_height < box_height_thrld and ((box_length > box_length_thrld and box_width > box_width_thrld) or (box_length > box_width_thrld and box_width > box_length_thrld)):
+                box = c.getOOBB(data=data)
+                if data == 'pcd':
+                    max_height = np.max(box[:, 2])
+                    min_height = np.min(box[:, 2])
+                    box_height = max_height - min_height
+                    xy_vertices = box[:4, :2]
+                    box_length = np.linalg.norm(xy_vertices[0] - xy_vertices[1])
+                    box_width = np.linalg.norm(xy_vertices[1] - xy_vertices[2])
+                    xy_area = box_width * box_length
+                    # An object cannot be of that shape
+                    if max_height < max_height_thrld and min_height < min_height_thrld and box_height < box_height_thrld and ((box_length > box_length_thrld and box_width > box_width_thrld) or (box_length > box_width_thrld and box_width > box_length_thrld)):
+                        boxes.append(box)
+                        labels.append(c.id)
+                else:
                     boxes.append(box)
-                    labels.append(c.id)
+                    labels.append(c.id)  
             ground_truth = self.updateGroundTruth()
         self._view.graphicsView.setClusterAABB(boxes)
         self._view.graphicsView.setClusterLabels(labels)

@@ -12,14 +12,14 @@ if __name__ == "__main__":
     model = LidarProcessor()
     ctrl = Controller(view=view, model=model)
     file = ["/home/marcel/Downloads/pylidartracker_test_data/street.pcap"]
-    file = ["/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s04_sensor_data_s110_lidar_ouster_north_1646667314.041079126.pcd.pcd",
-            "/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s04_sensor_data_s110_lidar_ouster_north_1646667315.741349297.pcd.pcd",
-            "/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s04_sensor_data_s110_lidar_ouster_north_1646667318.539890142.pcd.pcd"]
+#     file = ["/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s04_sensor_data_s110_lidar_ouster_north_1646667314.041079126.pcd.pcd",
+#             "/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s04_sensor_data_s110_lidar_ouster_north_1646667315.741349297.pcd.pcd",
+#             "/home/marcel/Repositorys/a9_dataset_r01_s04/_points/r01_s04_sensor_data_s110_lidar_ouster_north_1646667318.539890142.pcd.pcd"]
     config_file = "/home/marcel/Repositorys/pylidartracker/data/street_config.json"
-    config_file = "/home/marcel/Repositorys/pylidartracker/data/pcd_config.json"
+#     config_file = "/home/marcel/Repositorys/pylidartracker/data/pcd_config.json"
     ctrl.pcap_filename = file
     ctrl.analyze_pcap_fn(file, None)
-    ctrl.load_frames_fn(0, 3, None)
+    ctrl.load_frames_fn(0, 90, None)
     ctrl.config_filename = config_file
     ctrl._model.init_from_config(config_file)
     ctrl._apply_preprocessing_fn(None)

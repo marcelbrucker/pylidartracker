@@ -101,6 +101,9 @@ class LidarGraphicsView(gl.GLViewWidget):
             color=(1.0, 0.0, 1.0, 0.0), width=self.triangleWidth)
         self.addItem(self.triangle)
 
+        self.classifyObjects = False
+        self.visualizeGroundTruth = False
+
     def mouseReleaseEvent(self, event):
         # proceed normally
         super().mouseReleaseEvent(event)
@@ -236,17 +239,9 @@ class LidarGraphicsView(gl.GLViewWidget):
         self.drawCropBox()
 
         # draw clusters
-        # print('self.cluster_boxes')
-        # print(len(self.cluster_boxes))
-        # if len(self.cluster_boxes) > 0:
-        #     print(self.cluster_boxes[0])
         self.drawClusters()
 
         # draw ground truth
-        # print('self.ground_truth')
-        # print(len(self.ground_truth))
-        # if len(self.ground_truth) > 0:
-        #     print(self.ground_truth[0])
         self.drawGroundTruth()
 
     def drawCropBox(self):
@@ -301,32 +296,35 @@ class LidarGraphicsView(gl.GLViewWidget):
         self.cluster_box_lines = []
         self.cluster_box_text = []
         for box, label in zip(self.cluster_boxes, self.cluster_labels):
-            xy_vertices = box[:4, :2]
-            box_length = np.linalg.norm(xy_vertices[0] - xy_vertices[1])
-            box_width = np.linalg.norm(xy_vertices[1] - xy_vertices[2])
-            box_height = np.max(box[:, 2]) - np.min(box[:, 2])
-            if box_length > 0.25 and box_length < 0.5 and box_width > 0.25 and box_width < 0.5 and box_height > 1 and box_height < 2:
-                # pedestrian
-                box_color_hex = 'E976F9' 
-                box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
-            elif ((box_length > 1 and box_length < 2 and box_width > 0.4 and box_width < 1) or (box_length > 0.4 and box_length < 1 and box_width > 1 and box_width < 2)) and box_height > 1 and box_height < 2:
-                # bike (bicycle/motorcycle)
-                box_color_hex = 'B18CFF' 
-                box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
-            elif ((box_length > 2 and box_length < 5 and box_width > 1.5 and box_width < 2) or (box_length > 1.5 and box_length < 2 and box_width > 2 and box_width < 5)) and box_height > 1 and box_height < 2:
-                # car
-                box_color_hex = '00CCF6' 
-                box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
-            elif ((box_length > 4 and box_length < 7 and box_width > 1.8 and box_width < 2.2) or (box_length > 1.8 and box_length < 2.2 and box_width > 4 and box_width < 7)) and box_height > 1.5 and box_height < 2.5:
-                # van
-                box_color_hex = 'EBCF36' 
-                box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
-            elif ((box_length > 6 and box_length < 20 and box_width > 2.2 and box_width < 3) or (box_length > 2.2 and box_length < 3 and box_width > 6 and box_width < 20)) and box_height > 3 and box_height < 4.5:
-                # truck
-                box_color_hex = '56FFB6' 
-                box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
+            if self.classifyObjects:
+                xy_vertices = box[:4, :2]
+                box_length = np.linalg.norm(xy_vertices[0] - xy_vertices[1])
+                box_width = np.linalg.norm(xy_vertices[1] - xy_vertices[2])
+                box_height = np.max(box[:, 2]) - np.min(box[:, 2])
+                if box_length > 0.25 and box_length < 0.5 and box_width > 0.25 and box_width < 0.5 and box_height > 1 and box_height < 2:
+                    # pedestrian
+                    box_color_hex = 'E976F9' 
+                    box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
+                elif ((box_length > 1 and box_length < 2 and box_width > 0.4 and box_width < 1) or (box_length > 0.4 and box_length < 1 and box_width > 1 and box_width < 2)) and box_height > 1 and box_height < 2:
+                    # bike (bicycle/motorcycle)
+                    box_color_hex = 'B18CFF' 
+                    box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
+                elif ((box_length > 2 and box_length < 5 and box_width > 1.5 and box_width < 2) or (box_length > 1.5 and box_length < 2 and box_width > 2 and box_width < 5)) and box_height > 1 and box_height < 2:
+                    # car
+                    box_color_hex = '00CCF6' 
+                    box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
+                elif ((box_length > 4 and box_length < 7 and box_width > 1.8 and box_width < 2.2) or (box_length > 1.8 and box_length < 2.2 and box_width > 4 and box_width < 7)) and box_height > 1.5 and box_height < 2.5:
+                    # van
+                    box_color_hex = 'EBCF36' 
+                    box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
+                elif ((box_length > 6 and box_length < 20 and box_width > 2.2 and box_width < 3) or (box_length > 2.2 and box_length < 3 and box_width > 6 and box_width < 20)) and box_height > 3 and box_height < 4.5:
+                    # truck
+                    box_color_hex = '56FFB6' 
+                    box_color = tuple(np.array([int(box_color_hex[:2], 16), int(box_color_hex[2:4], 16), int(box_color_hex[4:6], 16), 255]) / 255)
+                else:
+                    continue
             else:
-                continue
+                box_color = self.box_color
             l = gl.GLLinePlotItem(pos=box, color=box_color,
                 width=self.box_width)
             self.addItem(l)
@@ -361,10 +359,11 @@ class LidarGraphicsView(gl.GLViewWidget):
         }
 
         self.ground_truth_lines = []
-        for box, category in self.ground_truth:
-            g = gl.GLLinePlotItem(pos=box, color=color_map[category], width=self.box_width)
-            self.addItem(g)
-            self.ground_truth_lines.append(g)
+        if self.visualizeGroundTruth:
+            for box, category in self.ground_truth:
+                g = gl.GLLinePlotItem(pos=box, color=color_map[category], width=self.box_width)
+                self.addItem(g)
+                self.ground_truth_lines.append(g)
 
 if __name__ == "__main__":
     from PyQt5 import QtWidgets, QtCore

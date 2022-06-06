@@ -69,6 +69,10 @@
             "box_height_thrld": 4.5,
             "box_length_thrld": 0,
             "box_width_thrld": 0
+        },
+        "settings": {
+            "classify_objects": false,
+            "visualize_ground_truth": false
         }
     },
     "tracking": {
